@@ -1,4 +1,5 @@
-module GSIM (                       //Don't modify interface
+`include "define.v"
+module GSIM (
 	input          i_clk,
 	input          i_reset,
 	input          i_module_en,
@@ -16,7 +17,30 @@ module GSIM (                       //Don't modify interface
 	output         o_x_wen,
 	output [  8:0] o_x_addr,
 	output [ 31:0] o_x_data  
-);
-
-
+	);
+////	
+	reg 	[3:0]	state, next_state;
+////output assign
+	assign o_x_wen = 1;
+	assign o_x_addr = 0;
+	assign o_x_data = 0;
+////
+	always @(*) begin//state
+		case (state)
+			`init : next_state = `mtx_num;
+			`mtx_num : next_state = (i_module_en) ? `load_mtx : `mtx_num;
+			`load_mtx : next_state = (1) ? `iteration : `load_mtx;
+			default : next_state = state;
+		endcase
+	end
+	always @(*) begin
+		
+	end
+	always @(posedge i_clk or posedge i_reset) begin
+		if (i_reset) begin
+			state <= `init;
+		end else begin
+			state <= next_state;
+		end
+	end
 endmodule
