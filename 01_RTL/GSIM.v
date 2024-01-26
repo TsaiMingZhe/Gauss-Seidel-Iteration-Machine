@@ -28,19 +28,33 @@ module GSIM (
 	always @(*) begin//state
 		case (state)
 			`init : next_state = `mtx_num;
-			`mtx_num : next_state = (i_module_en) ? `load_mtx : `mtx_num;
-			`load_mtx : next_state = (1) ? `iteration : `load_mtx;
+			`mtx_num : next_state = (i_module_en) ? `load_b : `mtx_num;
+			`load_b : next_state = (i_mem_dout_vld) ? `load_a : `load_b;
+			`load_a : next_state = (1) ? `iteration : `load_a;
+			`iteration : next_state = (1) ? `data_out : `iteration;
+			`data_out : next_state = (1) ? `endding : `data_out;
+			`endding : next_state = `endding;
 			default : next_state = state;
 		endcase
 	end
 	always @(*) begin
-		
+		case (state)//matrix memory out
+			load_b : begin
+				
+			end
+			default: 
+		endcase
 	end
 	always @(posedge i_clk or posedge i_reset) begin
 		if (i_reset) begin
 			state <= `init;
+			load17_cnt <= 0;
 		end else begin
 			state <= next_state;
+			if (state == `load_mtx) begin
+				load17_cnt <= (i_mem_dout_vld) ? (load17_cnt[4]) ? 0 : load17_cnt + 1 : load17_cnt;
+			end 
+			load17_cnt <= () ? 
 		end
 	end
 endmodule
