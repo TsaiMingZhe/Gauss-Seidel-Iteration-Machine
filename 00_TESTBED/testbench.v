@@ -72,7 +72,10 @@ end
 
 // Write out waveform file
 initial begin
-`ifdef VCS
+    $fsdbDumpfile("gsim.fsdb");
+    $fsdbDumpvars(0, "+mda");
+//my command--------------------------------------------------
+/*`ifdef VCS
 `elsif SDF
   $fsdbDumpfile("gsim.fsdb");
   $fsdbDumpvars(1, "+mda");
@@ -81,7 +84,8 @@ initial begin
   $fsdbDumpfile("gsim.fsdb");
   $fsdbDumpvars(0, "+mda");
   $fsdbDumpMDA;
-`endif
+`endif*/
+//my command--------------------------------------------------
 end
 
 initial $readmemh (`INFILE, u_matrix_mem.mem_r);
@@ -121,7 +125,7 @@ initial begin
     reset = 0;
     module_en = 0;
     matrix_num = 0;
-    mem_rrdy =1;
+    mem_rrdy = 1;
     mem_dout_vld = 0;
     mem_dout = 0;   
     task_reset;
@@ -221,8 +225,9 @@ end
 
 // i_mem_rrdy simulation (modify here)
 always @(posedge clk or posedge reset)  begin
-    if(reset)    rrdy_r <= 1;
-     else rrdy_r <= 1;
+    if(reset)    rrdy_r <= 0;
+     else        rrdy_r <= 1;
+
 end
 
 endmodule
