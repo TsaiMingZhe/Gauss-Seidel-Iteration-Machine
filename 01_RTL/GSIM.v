@@ -50,13 +50,36 @@ module GSIM (
 			default : x_reg_w = x_reg;
 		endcase
 	end
+	always @(posedge i_clk or posedge i_reset) begin//matrix memory control
+		if (i_reset) begin
+			o_mem_rreq <= 0;
+			o_mem_addr <= 0;
+		end else begin
+			case (state)
+				`idle : begin
+					o_mem_rreq <= (i_module_en); 
+					o_mem_addr <= (round_n * 17) - 1;
+				end
+				`load_b : begin
+					o_mem_rreq <= 1; 
+					o_mem_addr <= (i_mem_rrdy) ? o_mem_addr - 1 : o_mem_addr; 
+				end
+				`load_a : begin
+					o_mem_rreq <= ~&{i_mem_rrdy, a_cnt};
+					o_mem_addr <= (i_mem_rrdy) ? o_mem_addr - 1 : o_mem_addr;
+				end
+				default : begin
+					o_mem_rreq <= 0;
+					o_mem_addr <= 0;
+				end
+			endcase
+		end
+	end
 	always @(posedge i_clk or posedge i_reset) begin
 		if (i_reset) begin
 			state <= `idle;
 			round_n <= 1;
 			o_proc_done <= 0;//test
-			o_mem_rreq <= 0;//test
-			o_mem_addr <= 0;
 			a_cnt <= 0;
 			iter_cnt <= 0;
 			x_reg <= 0;
@@ -64,11 +87,22 @@ module GSIM (
 			state <= next_state;
 			round_n <= (state == `next_mtx) ? round_n + 1 : round_n;
 			o_proc_done <= 0;//test
-			o_mem_rreq <= i_module_en;
-			o_mem_addr <= o_mem_addr_w;
-			a_cnt <= (state == `load_a) ? a_cnt + 1 : a_cnt;
+			a_cnt <= (state == `load_a & i_mem_rrdy) ? a_cnt + 1 : a_cnt;
 			iter_cnt <= (state == `iteration) ? iter_cnt + 1 : iter_cnt;
 			x_reg <= (state == `load_a & ~|a_cnt) ? i_mem_dout : x_reg;
 		end
 	end
+endmodule
+module mult_a_x (input [15:0]i_a, input [31:0]i_x, output [31:0]o_data);
+	wire [47:0] m_ax;
+	assign m_ax = $signed(i_a) * $signed(i_x);
+	assign o_data = (m_ax[47]) ? (&m_ax[46:31]) ? m_ax[31:0] : 32'h80000000
+							   : (|m_ax[46:31]) ? 32'h7fffffff : m_ax[31:0];
+endmodule
+
+module mult_b_a (input [15:0]i_b, input [15:0]i_a, output [31:0]o_data);
+	wire [31:0] m_ba;
+	assign m_ba = $signed(i_b) * $signed(i_a);
+	assign o_data = (m_ba[31]) ? (&m_ba[30:29]) ? {m_ba[31], m_ba[28:0], 2'b0} : 32'h80000000
+							   : (|m_ba[30:29]) ? 32'h7fffffff : {m_ba[31], m_ba[28:0], 2'b0};	
 endmodule
